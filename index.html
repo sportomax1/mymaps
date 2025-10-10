@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Maps + Google Sheets Pin Map</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📍 My Interactive Map</h1>
+      <p>Dynamic pins loaded from Google Sheets with date filtering</p>
+    </header>
+    
+    <div class="filters">
+      <h3>📅 Filter by Date</h3>
+      <div class="filter-controls">
+        <div class="filter-group">
+          <label for="filterType">Filter Type:</label>
+          <select id="filterType">
+            <option value="all">Show All Records</option>
+            <option value="last-week">Last Week</option>
+            <option value="last-month">Last Month</option>
+            <option value="last-year">Last Year</option>
+            <option value="custom-date">Custom Date</option>
+            <option value="date-range">Date Range</option>
+          </select>
+        </div>
+        
+        <div class="filter-group" id="customDateGroup" style="display: none;">
+          <label for="customDate">Select Date:</label>
+          <input type="date" id="customDate">
+        </div>
+        
+        <div class="filter-group" id="dateRangeGroup" style="display: none;">
+          <label for="startDate">From:</label>
+          <input type="date" id="startDate">
+          <label for="endDate">To:</label>
+          <input type="date" id="endDate">
+        </div>
+        
+        <button id="applyFilter" class="filter-btn">🔍 Apply Filter</button>
+        <button id="clearFilter" class="filter-btn secondary">🗑️ Clear</button>
+      </div>
+      
+      <div id="filterStatus" class="filter-status"></div>
+      <div class="data-controls">
+        <button id="viewDataBtn" class="filter-btn">📄 View Data Points</button>
+      </div>
+    </div>
+    
+    <main>
+      <div id="map"></div>
+    </main>
+  </div>
+
+  <!-- Load local environment variables for testing and main JavaScript -->
+  <script src="./env.js"></script>
+  <script src="main.js"></script>
+  
+  <!-- Data points modal -->
+  <div id="dataModal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <button id="closeModal" class="modal-close">✖</button>
+      <h2>Data Points</h2>
+      <div class="modal-actions">
+        <button id="exportCsv" class="filter-btn">Export CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table id="dataTable">
+          <thead>
+            <tr><th>#</th><th>Timestamp</th><th>Street</th><th>City</th><th>State</th><th>ZIP</th><th>Latitude</th><th>Longitude</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

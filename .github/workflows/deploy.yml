@@ -1,0 +1,39 @@
+name: Build and Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+      GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build static site with injected secrets
+        run: |
+          echo "window.GOOGLE_MAPS_API_KEY = '${GOOGLE_MAPS_API_KEY}';" > ./public/env.js
+          echo "window.GOOGLE_SHEET_ID = '${GOOGLE_SHEET_ID}';" >> ./public/env.js
+          npm run build || echo "No build step, copying files"
+          mkdir -p dist
+          cp -r index.html main.js style.css public/env.js dist/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
