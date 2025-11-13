@@ -15,6 +15,15 @@
     
     <div class="filters">
       <h3>📅 Filter by Date</h3>
+      
+      <!-- Daily Navigation -->
+      <div class="daily-nav">
+        <button id="prevDayBtn" class="nav-btn">← Previous Day</button>
+        <input type="date" id="datePickerDaily">
+        <button id="nextDayBtn" class="nav-btn">Next Day →</button>
+        <span id="dailyDateDisplay" class="daily-date-display"></span>
+      </div>
+      
       <div class="filter-controls">
         <div class="filter-group">
           <label for="filterType">Filter Type:</label>
@@ -47,6 +56,17 @@
       <div id="filterStatus" class="filter-status"></div>
       <div class="data-controls">
         <button id="viewDataBtn" class="filter-btn">📄 View Data Points</button>
+        <button id="timelineBtn" class="filter-btn">📊 View Timeline</button>
+      </div>
+      
+      <!-- Play Mode Controls -->
+      <div id="playControls" class="play-controls" style="display: none;">
+        <button id="playBtn" class="filter-btn">▶️ Play Animation</button>
+        <button id="stopPlayBtn" class="filter-btn secondary">⏹️ Stop</button>
+        <label for="playSpeed">Speed:</label>
+        <input type="range" id="playSpeed" min="0.5" max="3" step="0.5" value="1" class="play-speed-slider">
+        <span id="playSpeedDisplay">1x</span>
+        <span id="playStatus" class="play-status"></span>
       </div>
     </div>
     
@@ -75,6 +95,15 @@
           <tbody></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- Timeline modal -->
+  <div id="timelineModal" class="modal" aria-hidden="true">
+    <div class="modal-content timeline-modal">
+      <button id="closeTimelineModal" class="modal-close">✖</button>
+      <h2>Daily Timeline - Order of Visits</h2>
+      <div id="timelineList" class="timeline-list"></div>
     </div>
   </div>
 </body>

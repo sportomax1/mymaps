@@ -12,18 +12,15 @@ let currentFilter = 'all';
 function parseDate(dateStr) {
   if (!dateStr) return null;
   
-  // Try different date formats
-  const formats = [
-    // ISO format: 2023-10-09
-    /^\d{4}-\d{2}-\d{2}$/,
-    // US format: 10/09/2023 or 10-09-2023
-    /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/,
-    // European format: 09/10/2023 or 09-10-2023
-    /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/,
-    // Text format: October 9, 2023
-    /^[A-Za-z]+\s+\d{1,2},\s+\d{4}$/
-  ];
+  // Handle Google Sheets format: "M/D/YYYY HH:MM:SS"
+  const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/);
+  if (match) {
+    const [_, month, day, year, hour, minute, second] = match;
+    // month is 0-indexed in JS Date
+    return new Date(year, month - 1, day, hour, minute, second);
+  }
   
+  // Fallback: try native Date parser for ISO and other formats
   const date = new Date(dateStr);
   return isNaN(date.getTime()) ? null : date;
 }
@@ -73,6 +70,29 @@ function getDateRangeFilter(filterType, customDate = null, startDate = null, end
 // ------------------------------
 // Map and marker functions
 // ------------------------------
+function getEmojiMarker(emoji) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
+    <circle cx="50" cy="50" r="48" fill="#404040" opacity="0.85"/>
+    <text x="50" y="60" font-size="50" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function getMarkerEmojiByMinute(date) {
+  // If date is null/undefined, default to car emoji
+  if (!date) return '🚗';
+  
+  const minutes = date.getMinutes();
+  
+  // 🕐 Clock emoji for records at the top of the hour (00 minutes)
+  if (minutes === 0) {
+    return '🕐';
+  }
+  
+  // 🚗 Car emoji for all other times
+  return '🚗';
+}
+
 function clearMarkers() {
   allMarkers.forEach(marker => marker.setMap(null));
   allMarkers = [];
@@ -89,12 +109,16 @@ function createMarker(data) {
     return null;
   }
 
+  // Determine emoji based on minute value
+  const emoji = getMarkerEmojiByMinute(date);
+  
   let marker;
   try {
     marker = new google.maps.Marker({
       position: { lat, lng },
       map,
       title,
+      icon: getEmojiMarker(emoji),
     });
   } catch (err) {
     console.error('Failed to create marker for data:', data, err);
@@ -297,6 +321,62 @@ function setupFilterEventHandlers() {
       });
     });
 
+  // Daily navigation
+  const datePickerDaily = document.getElementById('datePickerDaily');
+  const prevDayBtn = document.getElementById('prevDayBtn');
+  const nextDayBtn = document.getElementById('nextDayBtn');
+  const dailyDateDisplay = document.getElementById('dailyDateDisplay');
+  
+  // Initialize date picker to today
+  const today = new Date();
+  const todayString = today.toISOString().split('T')[0];
+  datePickerDaily.value = todayString;
+  updateDailyDateDisplay(today);
+  
+  function updateDailyDateDisplay(date) {
+    dailyDateDisplay.textContent = date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  }
+  
+  function filterByDailyDate(dateString) {
+    // Switch to custom-date filter
+    filterTypeSelect.value = 'custom-date';
+    customDateGroup.style.display = 'flex';
+    dateRangeGroup.style.display = 'none';
+    
+    // Set the custom date and apply filter
+    document.getElementById('customDate').value = dateString;
+    filterAndDisplayMarkers();
+  }
+  
+  prevDayBtn.addEventListener('click', () => {
+    const currentDate = new Date(datePickerDaily.value);
+    currentDate.setDate(currentDate.getDate() - 1);
+    const dateString = currentDate.toISOString().split('T')[0];
+    datePickerDaily.value = dateString;
+    updateDailyDateDisplay(currentDate);
+    filterByDailyDate(dateString);
+  });
+  
+  nextDayBtn.addEventListener('click', () => {
+    const currentDate = new Date(datePickerDaily.value);
+    currentDate.setDate(currentDate.getDate() + 1);
+    const dateString = currentDate.toISOString().split('T')[0];
+    datePickerDaily.value = dateString;
+    updateDailyDateDisplay(currentDate);
+    filterByDailyDate(dateString);
+  });
+  
+  datePickerDaily.addEventListener('change', (e) => {
+    const selectedDate = new Date(e.target.value);
+    updateDailyDateDisplay(selectedDate);
+    filterByDailyDate(e.target.value);
+  });
+
   // View Data modal
   const viewBtn = document.getElementById('viewDataBtn');
   const closeBtn = document.getElementById('closeModal');
@@ -311,6 +391,40 @@ function setupFilterEventHandlers() {
   if (modal) modal.addEventListener('click', (e) => {
     if (e.target === modal) closeDataModal();
   });
+
+  // Timeline modal
+  const timelineBtn = document.getElementById('timelineBtn');
+  const closeTimelineBtn = document.getElementById('closeTimelineModal');
+  const timelineModal = document.getElementById('timelineModal');
+
+  if (timelineBtn) timelineBtn.addEventListener('click', displayTimelineModal);
+  if (closeTimelineBtn) closeTimelineBtn.addEventListener('click', closeTimelineModal);
+  if (timelineModal) timelineModal.addEventListener('click', (e) => {
+    if (e.target === timelineModal) closeTimelineModal();
+  });
+
+  // Play mode controls
+  const playBtn = document.getElementById('playBtn');
+  const stopPlayBtn = document.getElementById('stopPlayBtn');
+  const playSpeed = document.getElementById('playSpeed');
+  const playSpeedDisplay = document.getElementById('playSpeedDisplay');
+  const playControls = document.getElementById('playControls');
+
+  if (playBtn) playBtn.addEventListener('click', startPlayAnimation);
+  if (stopPlayBtn) stopPlayBtn.addEventListener('click', stopPlayAnimation);
+
+  // Show play controls when custom date filter is selected
+  filterTypeSelect.addEventListener('change', () => {
+    if (filterTypeSelect.value === 'custom-date') {
+      playControls.style.display = 'flex';
+    }
+  });
+
+  if (playSpeed) {
+    playSpeed.addEventListener('input', (e) => {
+      playSpeedDisplay.textContent = e.target.value + 'x';
+    });
+  }
 }
 
 // ------------------------------
@@ -365,7 +479,8 @@ function initMap() {
       // Process all data
       // Expected columns: A=Timestamp, B=Latitude, C=Longitude, D=Street, E=City, F=State, G=ZIP
       allData = rows.map((row, idx) => {
-        const timestamp = row.c[0]?.v || "";      // Column A (Timestamp)
+        // Use .f (formatted) for timestamp, fallback to .v (raw value)
+        const timestamp = row.c[0]?.f || row.c[0]?.v || "";      // Column A (Timestamp)
         const lat = parseFloat(row.c[1]?.v);        // Column B (Latitude)
         const lng = parseFloat(row.c[2]?.v);        // Column C (Longitude)
         const street = row.c[3]?.v || '';
@@ -409,6 +524,132 @@ function initMap() {
       console.error("Error loading Google Sheet data:", err);
       setFilterStatus(`Error loading sheet: ${err.message}`, 'no-results');
     });
+}
+
+// ------------------------------
+// Play mode animation
+// ------------------------------
+let playMode = false;
+let playIntervalId = null;
+let playCurrentIndex = 0;
+
+function getFilteredAndSortedData() {
+  const filterType = document.getElementById('filterType').value;
+  const customDate = document.getElementById('customDate').value;
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  const dateFilter = getDateRangeFilter(filterType, customDate, startDate, endDate);
+
+  const filtered = allData.filter(item => {
+    if (!item.date && filterType !== 'all') return false;
+    return filterType === 'all' || dateFilter(item.date);
+  });
+
+  // Sort by date/time
+  return filtered.sort((a, b) => (a.date || new Date(0)) - (b.date || new Date(0)));
+}
+
+function displayTimelineModal() {
+  const sorted = getFilteredAndSortedData();
+  const timelineList = document.getElementById('timelineList');
+  timelineList.innerHTML = '';
+
+  sorted.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'timeline-item';
+    const timeStr = item.date ? item.date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Unknown';
+    div.innerHTML = `
+      <div class="timeline-time">${timeStr}</div>
+      <div>
+        <div class="timeline-location">${item.name || 'Unknown location'}</div>
+        <div class="timeline-coords">${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</div>
+      </div>
+    `;
+    timelineList.appendChild(div);
+  });
+
+  const modal = document.getElementById('timelineModal');
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function closeTimelineModal() {
+  const modal = document.getElementById('timelineModal');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+function startPlayAnimation() {
+  const sorted = getFilteredAndSortedData();
+  if (sorted.length === 0) {
+    alert('No data points to play for this filter.');
+    return;
+  }
+
+  playMode = true;
+  playCurrentIndex = 0;
+  const playBtn = document.getElementById('playBtn');
+  const stopPlayBtn = document.getElementById('stopPlayBtn');
+  playBtn.disabled = true;
+  stopPlayBtn.disabled = false;
+
+  // Clear current markers and show all grayed out
+  clearMarkers();
+  
+  const speed = parseFloat(document.getElementById('playSpeed').value) || 1;
+  const interval = 1000 / speed; // milliseconds between pins
+
+  const animatePin = () => {
+    if (playCurrentIndex < sorted.length) {
+      const item = sorted[playCurrentIndex];
+      
+      // Create marker for current pin (highlight it)
+      const currentMarker = new google.maps.Marker({
+        position: { lat: item.lat, lng: item.lng },
+        map,
+        title: item.name,
+        icon: getEmojiMarker('🟢'), // Green for current
+        zIndex: 100 + playCurrentIndex, // Higher z-index for current
+      });
+      allMarkers.push(currentMarker);
+
+      // Add click listener for info
+      if (item.name || item.date) {
+        const content = `
+          <div style="max-width: 200px;">
+            ${item.name ? `<strong>${item.name}</strong>` : ''}
+            ${item.date ? `<br><small>🕐 ${item.date.toLocaleTimeString()}</small>` : ''}
+          </div>
+        `;
+        const infowindow = new google.maps.InfoWindow({ content });
+        currentMarker.addListener("click", () => infowindow.open(map, currentMarker));
+      }
+
+      const timeStr = item.date ? item.date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Unknown';
+      document.getElementById('playStatus').textContent = `Playing: ${playCurrentIndex + 1}/${sorted.length} - ${timeStr}`;
+
+      playCurrentIndex++;
+      playIntervalId = setTimeout(animatePin, interval);
+    } else {
+      stopPlayAnimation();
+    }
+  };
+
+  animatePin();
+}
+
+function stopPlayAnimation() {
+  playMode = false;
+  if (playIntervalId) clearTimeout(playIntervalId);
+  playIntervalId = null;
+  playCurrentIndex = 0;
+
+  const playBtn = document.getElementById('playBtn');
+  const stopPlayBtn = document.getElementById('stopPlayBtn');
+  playBtn.disabled = false;
+  stopPlayBtn.disabled = true;
+  document.getElementById('playStatus').textContent = 'Animation stopped.';
+
+  // Refresh markers to show normal filtered view
+  filterAndDisplayMarkers();
 }
 
 // ------------------------------
