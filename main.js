@@ -542,7 +542,7 @@ function initMap() {
         const rows = json.table.rows;
 
       // Process all data
-      // Expected columns: A=Timestamp, B=Latitude, C=Longitude, D=Street, E=City, F=State, G=ZIP
+      // Expected columns: A=Timestamp, B=Latitude, C=Longitude, D=Street, E=City, F=State, G=ZIP, H=Count
       allData = rows.map((row, idx) => {
         // Use .f (formatted) for timestamp, fallback to .v (raw value)
         const timestamp = row.c[0]?.f || row.c[0]?.v || "";      // Column A (Timestamp)
@@ -552,6 +552,7 @@ function initMap() {
         const city = row.c[4]?.v || '';
         const state = row.c[5]?.v || '';
         const zip = row.c[6]?.v || '';
+        const count = row.c[7]?.v || '';            // Column H (Count)
 
         const addressParts = [street, city, state, zip].filter(Boolean);
         const name = addressParts.join(', ');
@@ -564,7 +565,8 @@ function initMap() {
           name,
           lat,
           lng,
-          raw: { timestamp, street, city, state, zip },
+          count,
+          raw: { timestamp, street, city, state, zip, count },
           rowIndex: idx + 1,
           isValid: !isNaN(lat) && !isNaN(lng)
         };
@@ -623,11 +625,14 @@ function displayTimelineModal() {
     const div = document.createElement('div');
     div.className = 'timeline-item';
     const timeStr = item.date ? item.date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Unknown';
+    const countDisplay = item.count ? `<div class="timeline-count">Count: ${item.count}</div>` : '';
     div.innerHTML = `
+      <div class="timeline-sequence">#${idx + 1}</div>
       <div class="timeline-time">${timeStr}</div>
       <div>
         <div class="timeline-location">${item.name || 'Unknown location'}</div>
         <div class="timeline-coords">${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</div>
+        ${countDisplay}
       </div>
     `;
     timelineList.appendChild(div);
@@ -656,7 +661,7 @@ function startPlayAnimation() {
   playBtn.disabled = true;
   stopPlayBtn.disabled = false;
 
-  // Clear current markers and show all grayed out
+  // Clear current markers
   clearMarkers();
   
   const speed = parseFloat(document.getElementById('playSpeed').value) || 1;
@@ -666,30 +671,50 @@ function startPlayAnimation() {
     if (playCurrentIndex < sorted.length) {
       const item = sorted[playCurrentIndex];
       
-      // Create marker for current pin (highlight it)
+      // Show all previous pins in blue (visited)
+      for (let i = 0; i < playCurrentIndex; i++) {
+        const prevItem = sorted[i];
+        const prevMarker = new google.maps.Marker({
+          position: { lat: prevItem.lat, lng: prevItem.lng },
+          map,
+          icon: getEmojiMarker('🔵'), // Blue for visited
+          zIndex: i,
+          opacity: 0.6,
+        });
+        allMarkers.push(prevMarker);
+      }
+      
+      // Show current pin in green
       const currentMarker = new google.maps.Marker({
         position: { lat: item.lat, lng: item.lng },
         map,
         title: item.name,
         icon: getEmojiMarker('🟢'), // Green for current
-        zIndex: 100 + playCurrentIndex, // Higher z-index for current
+        zIndex: 1000 + playCurrentIndex, // Higher z-index for current
       });
       allMarkers.push(currentMarker);
 
       // Add click listener for info
       if (item.name || item.date) {
+        const countInfo = item.count ? `<br><small>📊 Count: ${item.count}</small>` : '';
         const content = `
           <div style="max-width: 200px;">
-            ${item.name ? `<strong>${item.name}</strong>` : ''}
+            <strong>#${playCurrentIndex + 1}</strong>
+            ${item.name ? `<br><strong>${item.name}</strong>` : ''}
             ${item.date ? `<br><small>🕐 ${item.date.toLocaleTimeString()}</small>` : ''}
+            ${countInfo}
           </div>
         `;
         const infowindow = new google.maps.InfoWindow({ content });
         currentMarker.addListener("click", () => infowindow.open(map, currentMarker));
       }
 
+      // Pan to current marker
+      map.panTo({ lat: item.lat, lng: item.lng });
+      
       const timeStr = item.date ? item.date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Unknown';
-      document.getElementById('playStatus').textContent = `Playing: ${playCurrentIndex + 1}/${sorted.length} - ${timeStr}`;
+      const countDisplay = item.count ? ` | Count: ${item.count}` : '';
+      document.getElementById('playStatus').textContent = `▶️ Stop #${playCurrentIndex + 1}/${sorted.length} at ${timeStr}${countDisplay}`;
 
       playCurrentIndex++;
       playIntervalId = setTimeout(animatePin, interval);
