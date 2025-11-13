@@ -7,7 +7,20 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
+  <!-- Password Login Modal (shown before app) -->
+  <div id="loginModal" class="login-modal" aria-hidden="false">
+    <div class="login-content">
+      <h1>🔐 Secure Map Access</h1>
+      <p>Please enter the password to access this map.</p>
+      <form id="loginForm">
+        <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="off" required>
+        <button type="submit" class="login-btn">Unlock Map</button>
+      </form>
+      <div id="loginError" class="login-error"></div>
+    </div>
+  </div>
+
+  <div id="appContainer" class="app-container" style="display: none;">
     <header>
       <h1>📍 My Interactive Map</h1>
       <p>Dynamic pins loaded from Google Sheets with date filtering</p>
@@ -73,6 +86,7 @@
     <main>
       <div id="map"></div>
     </main>
+  </div>
   </div>
 
   <!-- Load local environment variables for testing and main JavaScript -->

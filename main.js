@@ -5,6 +5,71 @@ let map;
 let allMarkers = [];
 let allData = [];
 let currentFilter = 'all';
+let isAuthenticated = false;
+
+// Hash-based password verification (more secure than plain text)
+function hashPassword(password) {
+  let hash = 0;
+  for (let i = 0; i < password.length; i++) {
+    const char = password.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return hash.toString();
+}
+
+// Simple password check (password will be in env.js or set via secret)
+// For GitHub Pages, the password will be embedded via workflow
+// For local testing, default to "PASSWORD"
+const APP_PASSWORD_HASH = window.APP_PASSWORD_HASH || hashPassword('PASSWORD');
+
+function checkPassword(inputPassword) {
+  return hashPassword(inputPassword) === APP_PASSWORD_HASH;
+}
+
+function initLoginModal() {
+  const loginModal = document.getElementById('loginModal');
+  const loginForm = document.getElementById('loginForm');
+  const passwordInput = document.getElementById('passwordInput');
+  const loginError = document.getElementById('loginError');
+  const appContainer = document.getElementById('appContainer');
+
+  // Check if already authenticated in localStorage
+  const sessionToken = localStorage.getItem('mapSessionToken');
+  if (sessionToken === 'authenticated_' + APP_PASSWORD_HASH.slice(0, 8)) {
+    // Already logged in
+    loginModal.setAttribute('aria-hidden', 'true');
+    appContainer.style.display = 'flex';
+    isAuthenticated = true;
+    return;
+  }
+
+  // Show login modal
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const password = passwordInput.value;
+
+    if (checkPassword(password)) {
+      // Correct password
+      isAuthenticated = true;
+      localStorage.setItem('mapSessionToken', 'authenticated_' + APP_PASSWORD_HASH.slice(0, 8));
+      loginError.classList.remove('show');
+      loginModal.setAttribute('aria-hidden', 'true');
+      appContainer.style.display = 'flex';
+      passwordInput.value = '';
+      startApp(); // Start the app after auth
+    } else {
+      // Wrong password
+      loginError.textContent = '❌ Incorrect password. Try again.';
+      loginError.classList.add('show');
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  });
+
+  // Auto-focus password input
+  passwordInput.focus();
+}
 
 // ------------------------------
 // Utility functions for date filtering
@@ -670,4 +735,11 @@ function startApp() {
   loadGoogleMaps();
 }
 
-document.addEventListener('DOMContentLoaded', startApp);
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize login modal first
+  initLoginModal();
+  // startApp will be called after successful authentication
+  if (isAuthenticated) {
+    startApp();
+  }
+});
