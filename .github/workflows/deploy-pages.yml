@@ -5,27 +5,33 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node (for potential future steps)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
       - name: Prepare public folder
         run: |
           mkdir -p public
-          # Copy static files into public; keep structure minimal
-          cp -R ./* public/ || true
-          # Remove the actions/workflow directory from the copied files to avoid clutter
-          rm -rf public/.github || true
-          # Remove git files
-          rm -rf public/.git public/.gitignore || true
+          # Copy static files into public
+          cp index.html public/
+          cp style.css public/
+          cp main.js public/
+          cp readme.md public/ || true
 
       - name: Write env.js from repository secrets
         run: |
@@ -35,7 +41,6 @@ jobs:
           window.GOOGLE_SHEET_ID = '${{ secrets.GOOGLE_SHEET_ID }}';
           
           // Password hash (hashed for basic obfuscation)
-          // Generate hash: same algorithm as in main.js hashPassword()
           function generatePasswordHash(password) {
             let hash = 0;
             for (let i = 0; i < password.length; i++) {
@@ -47,23 +52,13 @@ jobs:
           }
           window.APP_PASSWORD_HASH = generatePasswordHash('${{ secrets.APP_PASSWORD }}');
           ENVEOF
-          echo "Generated env.js:"
-          cat public/env.js
-          
-      - name: Verify env.js was created
-        run: |
-          if [ -f public/env.js ]; then
-            echo "✓ env.js exists"
-            ls -la public/env.js
-          else
-            echo "✗ env.js NOT found"
-            ls -la public/
-          fi
+          echo "✓ Generated env.js"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public'
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
-          publish_branch: gh-pages
-          cname: false
+        id: deployment
+        uses: actions/deploy-pages@v4
