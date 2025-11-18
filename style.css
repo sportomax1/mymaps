@@ -155,6 +155,57 @@ main {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
+/* Period Controls */
+.period-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.period-selector {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.period-btn {
+  background: #e0e0e0;
+  color: #333;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.period-btn:active {
+  transform: scale(0.95);
+}
+
+.period-btn.active {
+  background: #2c5aa0;
+  color: white;
+}
+
+.period-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.period-display {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e3a5f;
+  text-align: center;
+  min-width: 100px;
+}
+
 /* Top row of controls */
 .controls-top-row {
   display: flex;
@@ -162,7 +213,6 @@ main {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: space-between;
-  margin-bottom: 8px;
 }
 
 .daily-nav {
@@ -553,6 +603,29 @@ main {
 
   .controls-footer {
     padding: 12px 15px;
+  }
+
+  .period-controls {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .period-selector {
+    gap: 6px;
+  }
+
+  .period-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .period-nav {
+    gap: 10px;
+  }
+
+  .period-display {
+    font-size: 0.9rem;
+    min-width: 120px;
   }
 
   .controls-top-row {

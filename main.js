@@ -6,6 +6,9 @@ let allMarkers = [];
 let allData = [];
 let currentFilter = 'all';
 let isAuthenticated = false;
+let currentPeriod = 'day'; // 'day', 'week', 'month', 'quarter', 'year'
+let currentPeriodStart = new Date();
+currentPeriodStart.setHours(0, 0, 0, 0); // Start of today
 
 // Hash-based password verification (more secure than plain text)
 function hashPassword(password) {
@@ -130,6 +133,126 @@ function getDateRangeFilter(filterType, customDate = null, startDate = null, end
     default:
       return () => true;
   }
+}
+
+// Get period-based date range (day, week, month, quarter, year)
+function getPeriodDateRange(periodType, startDate = new Date()) {
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+
+  switch (periodType) {
+    case 'day':
+      end.setDate(end.getDate() + 1);
+      break;
+    case 'week':
+      // Start from Monday of this week
+      const dayOfWeek = start.getDay();
+      const mondayOffset = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+      start.setDate(start.getDate() + mondayOffset);
+      end.setDate(start.getDate() + 7);
+      break;
+    case 'month':
+      start.setDate(1);
+      end.setMonth(end.getMonth() + 1);
+      end.setDate(1);
+      break;
+    case 'quarter':
+      const quarter = Math.floor(start.getMonth() / 3);
+      start.setMonth(quarter * 3);
+      start.setDate(1);
+      end.setMonth(start.getMonth() + 3);
+      end.setDate(1);
+      break;
+    case 'year':
+      start.setMonth(0);
+      start.setDate(1);
+      end.setFullYear(end.getFullYear() + 1);
+      end.setMonth(0);
+      end.setDate(1);
+      break;
+  }
+
+  return { start, end };
+}
+
+// Format period display text
+function formatPeriodDisplay(periodType, startDate) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  const dateStr = startDate.toLocaleDateString('en-US', options);
+  
+  switch (periodType) {
+    case 'day':
+      return startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    case 'week':
+      const { end } = getPeriodDateRange('week', startDate);
+      const endStr = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `${dateStr} - ${endStr}`;
+    case 'month':
+      return startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    case 'quarter':
+      const q = Math.floor(startDate.getMonth() / 3) + 1;
+      return `Q${q} ${startDate.getFullYear()}`;
+    case 'year':
+      return startDate.getFullYear().toString();
+    default:
+      return dateStr;
+  }
+}
+
+// Navigate to next period
+function getNextPeriodStart(periodType, currentStart) {
+  const next = new Date(currentStart);
+  switch (periodType) {
+    case 'day':
+      next.setDate(next.getDate() + 1);
+      break;
+    case 'week':
+      next.setDate(next.getDate() + 7);
+      break;
+    case 'month':
+      next.setMonth(next.getMonth() + 1);
+      break;
+    case 'quarter':
+      next.setMonth(next.getMonth() + 3);
+      break;
+    case 'year':
+      next.setFullYear(next.getFullYear() + 1);
+      break;
+  }
+  return next;
+}
+
+// Navigate to previous period
+function getPreviousPeriodStart(periodType, currentStart) {
+  const prev = new Date(currentStart);
+  switch (periodType) {
+    case 'day':
+      prev.setDate(prev.getDate() - 1);
+      break;
+    case 'week':
+      prev.setDate(prev.getDate() - 7);
+      break;
+    case 'month':
+      prev.setMonth(prev.getMonth() - 1);
+      break;
+    case 'quarter':
+      prev.setMonth(prev.getMonth() - 3);
+      break;
+    case 'year':
+      prev.setFullYear(prev.getFullYear() - 1);
+      break;
+  }
+  return prev;
+}
+
+// Filter data by current period
+function filterDataByPeriod(data, periodType, startDate) {
+  const { start, end } = getPeriodDateRange(periodType, startDate);
+  return data.filter(item => {
+    if (!item.date) return false;
+    return item.date >= start && item.date < end;
+  });
 }
 
 // ------------------------------
@@ -345,6 +468,60 @@ function exportCsv() {
 // UI Event handlers
 // ------------------------------
 function setupFilterEventHandlers() {
+  // Period controls
+  const periodBtns = document.querySelectorAll('.period-btn');
+  const prevPeriodBtn = document.getElementById('prevPeriodBtn');
+  const nextPeriodBtn = document.getElementById('nextPeriodBtn');
+  const periodDisplay = document.getElementById('periodDisplay');
+  const datePickerDaily = document.getElementById('datePickerDaily');
+
+  function updatePeriodDisplay() {
+    periodDisplay.textContent = formatPeriodDisplay(currentPeriod, currentPeriodStart);
+    
+    // Update date picker to show the period start date
+    const isoString = currentPeriodStart.toISOString().split('T')[0];
+    datePickerDaily.value = isoString;
+    
+    // Display markers for current period
+    displayPeriodMarkers();
+  }
+
+  periodBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      periodBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentPeriod = btn.getAttribute('data-period');
+      
+      // Reset to today for the selected period
+      currentPeriodStart = new Date();
+      currentPeriodStart.setHours(0, 0, 0, 0);
+      
+      updatePeriodDisplay();
+    });
+  });
+
+  if (prevPeriodBtn) {
+    prevPeriodBtn.addEventListener('click', () => {
+      currentPeriodStart = getPreviousPeriodStart(currentPeriod, currentPeriodStart);
+      updatePeriodDisplay();
+    });
+  }
+
+  if (nextPeriodBtn) {
+    nextPeriodBtn.addEventListener('click', () => {
+      currentPeriodStart = getNextPeriodStart(currentPeriod, currentPeriodStart);
+      updatePeriodDisplay();
+    });
+  }
+
+  // Date picker for quick access
+  datePickerDaily.addEventListener('change', (e) => {
+    const selectedDate = new Date(e.target.value);
+    selectedDate.setHours(0, 0, 0, 0);
+    currentPeriodStart = selectedDate;
+    updatePeriodDisplay();
+  });
+
   // Toggle filter panel on mobile
   const toggleBtn = document.getElementById('toggleFiltersBtn');
   const filterPanel = document.getElementById('filterPanel');
@@ -397,62 +574,6 @@ function setupFilterEventHandlers() {
         if (e.key === 'Enter') filterAndDisplayMarkers();
       });
     });
-
-  // Daily navigation
-  const datePickerDaily = document.getElementById('datePickerDaily');
-  const prevDayBtn = document.getElementById('prevDayBtn');
-  const nextDayBtn = document.getElementById('nextDayBtn');
-  const dailyDateDisplay = document.getElementById('dailyDateDisplay');
-  
-  // Initialize date picker to today
-  const today = new Date();
-  const todayString = today.toISOString().split('T')[0];
-  datePickerDaily.value = todayString;
-  updateDailyDateDisplay(today);
-  
-  function updateDailyDateDisplay(date) {
-    dailyDateDisplay.textContent = date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  }
-  
-  function filterByDailyDate(dateString) {
-    // Switch to custom-date filter
-    filterTypeSelect.value = 'custom-date';
-    customDateGroup.style.display = 'flex';
-    dateRangeGroup.style.display = 'none';
-    
-    // Set the custom date and apply filter
-    document.getElementById('customDate').value = dateString;
-    filterAndDisplayMarkers();
-  }
-  
-  prevDayBtn.addEventListener('click', () => {
-    const currentDate = new Date(datePickerDaily.value);
-    currentDate.setDate(currentDate.getDate() - 1);
-    const dateString = currentDate.toISOString().split('T')[0];
-    datePickerDaily.value = dateString;
-    updateDailyDateDisplay(currentDate);
-    filterByDailyDate(dateString);
-  });
-  
-  nextDayBtn.addEventListener('click', () => {
-    const currentDate = new Date(datePickerDaily.value);
-    currentDate.setDate(currentDate.getDate() + 1);
-    const dateString = currentDate.toISOString().split('T')[0];
-    datePickerDaily.value = dateString;
-    updateDailyDateDisplay(currentDate);
-    filterByDailyDate(dateString);
-  });
-  
-  datePickerDaily.addEventListener('change', (e) => {
-    const selectedDate = new Date(e.target.value);
-    updateDailyDateDisplay(selectedDate);
-    filterByDailyDate(e.target.value);
-  });
 
   // View Data modal
   const viewBtn = document.getElementById('viewDataBtn');
@@ -612,6 +733,36 @@ let playMode = false;
 let playIntervalId = null;
 let playCurrentIndex = 0;
 
+// Display markers for the current period (chronologically sorted)
+function displayPeriodMarkers() {
+  clearMarkers();
+  
+  // Get data for current period
+  const periodData = filterDataByPeriod(allData, currentPeriod, currentPeriodStart);
+  
+  // Sort chronologically (AM before PM, 1 before 2, etc.)
+  const sorted = periodData.sort((a, b) => (a.date || new Date(0)) - (b.date || new Date(0)));
+  
+  // Create markers for each point in chronological order
+  sorted.forEach(item => {
+    const marker = createMarker(item);
+    if (marker) allMarkers.push(marker);
+  });
+  
+  // Adjust map bounds
+  if (allMarkers.length > 0) {
+    const bounds = new google.maps.LatLngBounds();
+    allMarkers.forEach(marker => bounds.extend(marker.getPosition()));
+    map.fitBounds(bounds);
+    
+    if (allMarkers.length === 1) {
+      google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+        if (map.getZoom() > 15) map.setZoom(15);
+      });
+    }
+  }
+}
+
 function getFilteredAndSortedData() {
   const filterType = document.getElementById('filterType').value;
   const customDate = document.getElementById('customDate').value;
@@ -629,7 +780,10 @@ function getFilteredAndSortedData() {
 }
 
 function displayTimelineModal() {
-  const sorted = getFilteredAndSortedData();
+  // Get data for current period, sorted chronologically
+  const periodData = filterDataByPeriod(allData, currentPeriod, currentPeriodStart);
+  const sorted = periodData.sort((a, b) => (a.date || new Date(0)) - (b.date || new Date(0)));
+  
   const timelineList = document.getElementById('timelineList');
   timelineList.innerHTML = '';
 
@@ -638,15 +792,35 @@ function displayTimelineModal() {
     div.className = 'timeline-item';
     const timeStr = item.date ? item.date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Unknown';
     const countDisplay = item.count ? `<div class="timeline-count">Count: ${item.count}</div>` : '';
-    div.innerHTML = `
-      <div class="timeline-sequence">#${idx + 1}</div>
-      <div class="timeline-time">${timeStr}</div>
-      <div>
-        <div class="timeline-location">${item.name || 'Unknown location'}</div>
-        <div class="timeline-coords">${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</div>
-        ${countDisplay}
-      </div>
-    `;
+    const header = document.createElement('div');
+    header.className = 'timeline-item-header';
+    const seqBadge = document.createElement('div');
+    seqBadge.className = 'timeline-sequence';
+    seqBadge.textContent = '#' + (idx + 1);
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'timeline-time';
+    timeDiv.textContent = timeStr;
+    header.appendChild(seqBadge);
+    header.appendChild(timeDiv);
+    if (item.count) {
+      const countBadge = document.createElement('div');
+      countBadge.className = 'timeline-count';
+      countBadge.textContent = 'Count: ' + item.count;
+      header.appendChild(countBadge);
+    }
+    
+    const locDiv = document.createElement('div');
+    locDiv.className = 'timeline-location';
+    locDiv.textContent = item.name || 'Unknown location';
+    
+    const coordDiv = document.createElement('div');
+    coordDiv.className = 'timeline-coords';
+    coordDiv.textContent = item.lat.toFixed(4) + ', ' + item.lng.toFixed(4);
+    
+    div.appendChild(header);
+    div.appendChild(locDiv);
+    div.appendChild(coordDiv);
+    
     timelineList.appendChild(div);
   });
 
@@ -660,9 +834,12 @@ function closeTimelineModal() {
 }
 
 function startPlayAnimation() {
-  const sorted = getFilteredAndSortedData();
+  // Get data for current period, sorted chronologically
+  const periodData = filterDataByPeriod(allData, currentPeriod, currentPeriodStart);
+  const sorted = periodData.sort((a, b) => (a.date || new Date(0)) - (b.date || new Date(0)));
+  
   if (sorted.length === 0) {
-    alert('No data points to play for this filter.');
+    alert('No data points to play for this period.');
     return;
   }
 

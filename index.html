@@ -31,13 +31,25 @@
 
     <!-- Bottom control panel (iPhone-optimized) -->
     <div class="controls-footer">
+      <!-- Period selector and navigation -->
+      <div class="period-controls">
+        <div class="period-selector">
+          <button id="periodDay" class="period-btn active" data-period="day">Day</button>
+          <button id="periodWeek" class="period-btn" data-period="week">Week</button>
+          <button id="periodMonth" class="period-btn" data-period="month">Month</button>
+          <button id="periodQuarter" class="period-btn" data-period="quarter">Quarter</button>
+          <button id="periodYear" class="period-btn" data-period="year">Year</button>
+        </div>
+        <div class="period-nav">
+          <button id="prevPeriodBtn" class="nav-btn">◀</button>
+          <span id="periodDisplay" class="period-display">Today</span>
+          <button id="nextPeriodBtn" class="nav-btn">▶</button>
+        </div>
+      </div>
+
       <div class="controls-top-row">
         <button id="toggleFiltersBtn" class="icon-btn">⚙️</button>
-        <div class="daily-nav">
-          <button id="prevDayBtn" class="nav-btn">◀</button>
-          <input type="date" id="datePickerDaily" class="date-input-small">
-          <button id="nextDayBtn" class="nav-btn">▶</button>
-        </div>
+        <input type="date" id="datePickerDaily" class="date-input-small">
         <button id="viewDataBtn" class="icon-btn">📄</button>
         <button id="timelineBtn" class="icon-btn">📊</button>
       </div>
