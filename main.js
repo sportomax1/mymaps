@@ -27,7 +27,14 @@ function hashPassword(password) {
 const APP_PASSWORD_HASH = window.APP_PASSWORD_HASH || hashPassword('PASSWORD');
 
 function checkPassword(inputPassword) {
-  return hashPassword(inputPassword) === APP_PASSWORD_HASH;
+  const inputHash = hashPassword(inputPassword);
+  const expectedHash = APP_PASSWORD_HASH;
+  console.log('🔑 Password Check:');
+  console.log('  Input: ' + inputPassword);
+  console.log('  Input Hash: ' + inputHash);
+  console.log('  Expected Hash: ' + expectedHash);
+  console.log('  Match: ' + (inputHash === expectedHash ? '✓ YES' : '✗ NO'));
+  return inputHash === expectedHash;
 }
 
 function initLoginModal() {
