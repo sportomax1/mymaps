@@ -345,6 +345,18 @@ function exportCsv() {
 // UI Event handlers
 // ------------------------------
 function setupFilterEventHandlers() {
+  // Toggle filter panel on mobile
+  const toggleBtn = document.getElementById('toggleFiltersBtn');
+  const filterPanel = document.getElementById('filterPanel');
+  
+  if (toggleBtn && filterPanel) {
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = filterPanel.style.display === 'none' || filterPanel.style.display === '';
+      filterPanel.style.display = isHidden ? 'flex' : 'none';
+      toggleBtn.classList.toggle('active');
+    });
+  }
+
   const filterTypeSelect = document.getElementById('filterType');
   const customDateGroup = document.getElementById('customDateGroup');
   const dateRangeGroup = document.getElementById('dateRangeGroup');

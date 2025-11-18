@@ -22,71 +22,72 @@
 
   <div id="appContainer" class="app-container" style="display: none;">
     <header>
-      <h1>📍 My Interactive Map</h1>
-      <p>Dynamic pins loaded from Google Sheets with date filtering</p>
+      <h1>📍 Map</h1>
     </header>
-    
-    <div class="filters">
-      <h3>📅 Filter by Date</h3>
-      
-      <!-- Daily Navigation -->
-      <div class="daily-nav">
-        <button id="prevDayBtn" class="nav-btn">← Previous Day</button>
-        <input type="date" id="datePickerDaily">
-        <button id="nextDayBtn" class="nav-btn">Next Day →</button>
-        <span id="dailyDateDisplay" class="daily-date-display"></span>
-      </div>
-      
-      <div class="filter-controls">
-        <div class="filter-group">
-          <label for="filterType">Filter Type:</label>
-          <select id="filterType">
-            <option value="all">Show All Records</option>
-            <option value="last-week">Last Week</option>
-            <option value="last-month">Last Month</option>
-            <option value="last-year">Last Year</option>
-            <option value="custom-date">Custom Date</option>
-            <option value="date-range">Date Range</option>
-          </select>
-        </div>
-        
-        <div class="filter-group" id="customDateGroup" style="display: none;">
-          <label for="customDate">Select Date:</label>
-          <input type="date" id="customDate">
-        </div>
-        
-        <div class="filter-group" id="dateRangeGroup" style="display: none;">
-          <label for="startDate">From:</label>
-          <input type="date" id="startDate">
-          <label for="endDate">To:</label>
-          <input type="date" id="endDate">
-        </div>
-        
-        <button id="applyFilter" class="filter-btn">🔍 Apply Filter</button>
-        <button id="clearFilter" class="filter-btn secondary">🗑️ Clear</button>
-      </div>
-      
-      <div id="filterStatus" class="filter-status"></div>
-      <div class="data-controls">
-        <button id="viewDataBtn" class="filter-btn">📄 View Data Points</button>
-        <button id="timelineBtn" class="filter-btn">📊 View Timeline</button>
-      </div>
-      
-      <!-- Play Mode Controls -->
-      <div id="playControls" class="play-controls" style="display: none;">
-        <button id="playBtn" class="filter-btn">▶️ Play Animation</button>
-        <button id="stopPlayBtn" class="filter-btn secondary">⏹️ Stop</button>
-        <label for="playSpeed">Speed:</label>
-        <input type="range" id="playSpeed" min="0.5" max="3" step="0.5" value="1" class="play-speed-slider">
-        <span id="playSpeedDisplay">1x</span>
-        <span id="playStatus" class="play-status"></span>
-      </div>
-    </div>
     
     <main>
       <div id="map"></div>
     </main>
-  </div>
+
+    <!-- Bottom control panel (iPhone-optimized) -->
+    <div class="controls-footer">
+      <div class="controls-top-row">
+        <button id="toggleFiltersBtn" class="icon-btn">⚙️</button>
+        <div class="daily-nav">
+          <button id="prevDayBtn" class="nav-btn">◀</button>
+          <input type="date" id="datePickerDaily" class="date-input-small">
+          <button id="nextDayBtn" class="nav-btn">▶</button>
+        </div>
+        <button id="viewDataBtn" class="icon-btn">📄</button>
+        <button id="timelineBtn" class="icon-btn">📊</button>
+      </div>
+      
+      <div class="filter-panel" id="filterPanel" style="display: none;">
+        <div class="filter-controls" id="advancedFilters">
+          <div class="filter-group">
+            <label for="filterType">Filter:</label>
+            <select id="filterType">
+              <option value="all">All</option>
+              <option value="last-week">Last Week</option>
+              <option value="last-month">Last Month</option>
+              <option value="last-year">Last Year</option>
+              <option value="custom-date">Custom</option>
+              <option value="date-range">Range</option>
+            </select>
+          </div>
+          
+          <div class="filter-group" id="customDateGroup" style="display: none;">
+            <label for="customDate">Date:</label>
+            <input type="date" id="customDate">
+          </div>
+          
+          <div class="filter-group" id="dateRangeGroup" style="display: none;">
+            <label for="startDate">From:</label>
+            <input type="date" id="startDate">
+            <label for="endDate">To:</label>
+            <input type="date" id="endDate">
+          </div>
+          
+          <div class="filter-buttons">
+            <button id="applyFilter" class="filter-btn">🔍 Apply</button>
+            <button id="clearFilter" class="filter-btn secondary">🗑️ Clear</button>
+          </div>
+        </div>
+        <div id="filterStatus" class="filter-status"></div>
+      </div>
+
+      <!-- Play mode controls -->
+      <div id="playControls" class="play-controls" style="display: none;">
+        <button id="playBtn" class="play-btn">▶️ Play</button>
+        <button id="stopPlayBtn" class="play-btn secondary">⏹️ Stop</button>
+        <label for="playSpeed" class="speed-label">Speed:</label>
+        <input type="range" id="playSpeed" min="0.5" max="3" step="0.5" value="1" class="play-speed-slider">
+        <span id="playSpeedDisplay" class="speed-display">1x</span>
+        <span id="playStatus" class="play-status"></span>
+      </div>
+      
+      <span id="dailyDateDisplay" class="daily-date-display"></span>
+    </div>
   </div>
 
   <!-- Load local environment variables for testing and main JavaScript -->
