@@ -5,6 +5,8 @@ on:
     branches:
       - main
 
+# Force redeployment to verify all secrets are working
+
 permissions:
   contents: read
   pages: write
