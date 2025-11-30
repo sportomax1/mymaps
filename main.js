@@ -44,14 +44,30 @@ function initLoginModal() {
   const loginError = document.getElementById('loginError');
   const appContainer = document.getElementById('appContainer');
 
+  // Ensure APP_PASSWORD_HASH is loaded from env.js
+  if (!window.APP_PASSWORD_HASH) {
+    console.error('❌ APP_PASSWORD_HASH not loaded! env.js may not have loaded.');
+    loginError.textContent = '❌ Configuration error. Check console. Reload page.';
+    loginError.classList.add('show');
+    return;
+  }
+
   // Check if already authenticated in localStorage
   const sessionToken = localStorage.getItem('mapSessionToken');
-  if (sessionToken === 'authenticated_' + APP_PASSWORD_HASH.slice(0, 8)) {
-    // Already logged in
+  const expectedToken = 'authenticated_' + APP_PASSWORD_HASH.slice(0, 8);
+  
+  if (sessionToken === expectedToken) {
+    // Already logged in with current hash
+    console.log('✓ Session token valid, bypassing login');
     loginModal.setAttribute('aria-hidden', 'true');
     appContainer.style.display = 'flex';
     isAuthenticated = true;
+    startApp();
     return;
+  } else if (sessionToken && sessionToken !== expectedToken) {
+    // Old session token from different password/deployment - clear it
+    console.log('⚠️ Old session token detected, clearing localStorage');
+    localStorage.removeItem('mapSessionToken');
   }
 
   // Show login modal
@@ -79,6 +95,18 @@ function initLoginModal() {
 
   // Auto-focus password input
   passwordInput.focus();
+
+  // Clear cache button for troubleshooting
+  const clearCacheBtn = document.getElementById('clearCacheBtn');
+  if (clearCacheBtn) {
+    clearCacheBtn.addEventListener('click', () => {
+      console.log('🧹 Clearing localStorage and reloading...');
+      localStorage.clear();
+      sessionStorage.clear();
+      // Force a hard reload
+      window.location.href = window.location.href.split('#')[0];
+    });
+  }
 }
 
 // ------------------------------
@@ -957,10 +985,22 @@ function startApp() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize login modal first
-  initLoginModal();
-  // startApp will be called after successful authentication
-  if (isAuthenticated) {
-    startApp();
+  // Wait a tiny bit for env.js to load (it loads before DOMContentLoaded)
+  // If env.js hasn't loaded, give it one more chance
+  if (!window.APP_PASSWORD_HASH) {
+    console.warn('⚠️ APP_PASSWORD_HASH not ready yet, waiting 100ms');
+    setTimeout(() => {
+      initLoginModal();
+      if (isAuthenticated) {
+        startApp();
+      }
+    }, 100);
+  } else {
+    // Initialize login modal first
+    initLoginModal();
+    // startApp will be called after successful authentication
+    if (isAuthenticated) {
+      startApp();
+    }
   }
 });
