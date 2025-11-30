@@ -32,6 +32,8 @@ jobs:
           cp style.css public/
           cp main.js public/
           cp readme.md public/ || true
+          echo "✓ Copied static files"
+          ls -la public/
 
       - name: Write env.js from repository secrets
         run: |
@@ -51,8 +53,14 @@ jobs:
             return hash.toString();
           }
           window.APP_PASSWORD_HASH = generatePasswordHash('${{ secrets.APP_PASSWORD }}');
+          console.log('✓ env.js loaded on GitHub Pages');
           ENVEOF
-          echo "✓ Generated env.js"
+          echo "✓ Generated env.js with secrets"
+          echo "Verifying env.js was created:"
+          cat public/env.js
+          echo ""
+          echo "✓ All files in public folder:"
+          ls -lah public/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
