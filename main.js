@@ -10,6 +10,77 @@ let currentPeriod = 'day'; // 'day', 'week', 'month', 'quarter', 'year'
 let currentPeriodStart = new Date();
 currentPeriodStart.setHours(0, 0, 0, 0); // Start of today
 
+// Cross-browser storage helper (works in Safari, Chrome, Firefox, incognito mode)
+const AppStorage = {
+  // Try localStorage, fallback to in-memory storage
+  storage: null,
+  inMemory: {},
+  
+  init() {
+    try {
+      const test = '__test__';
+      localStorage.setItem(test, test);
+      localStorage.removeItem(test);
+      this.storage = localStorage;
+      console.log('✓ Using localStorage');
+    } catch (e) {
+      console.warn('⚠️ localStorage unavailable (Safari private mode?), using memory storage');
+      this.storage = null;
+    }
+  },
+  
+  setItem(key, value) {
+    if (this.storage) {
+      try {
+        this.storage.setItem(key, value);
+      } catch (e) {
+        console.warn('Failed to save to localStorage:', e);
+        this.inMemory[key] = value;
+      }
+    } else {
+      this.inMemory[key] = value;
+    }
+  },
+  
+  getItem(key) {
+    if (this.storage) {
+      try {
+        return this.storage.getItem(key);
+      } catch (e) {
+        console.warn('Failed to read from localStorage:', e);
+        return this.inMemory[key] || null;
+      }
+    } else {
+      return this.inMemory[key] || null;
+    }
+  },
+  
+  removeItem(key) {
+    if (this.storage) {
+      try {
+        this.storage.removeItem(key);
+      } catch (e) {
+        console.warn('Failed to remove from localStorage:', e);
+      }
+    }
+    delete this.inMemory[key];
+  },
+  
+  clear() {
+    if (this.storage) {
+      try {
+        this.storage.clear();
+      } catch (e) {
+        console.warn('Failed to clear localStorage:', e);
+      }
+    }
+    this.inMemory = {};
+  }
+};
+
+// Initialize storage on page load
+AppStorage.init();
+
 // Hash-based password verification (more secure than plain text)
 function hashPassword(password) {
   let hash = 0;
@@ -96,8 +167,8 @@ function initLoginModal() {
     return;
   }
 
-  // Check if already authenticated in localStorage
-  const sessionToken = localStorage.getItem('mapSessionToken');
+  // Check if already authenticated
+  const sessionToken = AppStorage.getItem('mapSessionToken');
   const expectedToken = 'authenticated_' + APP_PASSWORD_HASH.slice(0, 8);
   
   logDebug('Session token: ' + (sessionToken ? 'EXISTS' : 'NONE'));
@@ -114,9 +185,9 @@ function initLoginModal() {
     return;
   } else if (sessionToken && sessionToken !== expectedToken) {
     // Old session token from different password/deployment - clear it
-    logDebug('⚠️ Old session token detected, clearing localStorage');
-    console.log('⚠️ Old session token detected, clearing localStorage');
-    localStorage.removeItem('mapSessionToken');
+    logDebug('⚠️ Old session token detected, clearing storage');
+    console.log('⚠️ Old session token detected, clearing storage');
+    AppStorage.removeItem('mapSessionToken');
   }
 
   // Show login modal
@@ -128,7 +199,7 @@ function initLoginModal() {
       // Correct password
       logDebug('✓ PASSWORD CORRECT - Logging in');
       isAuthenticated = true;
-      localStorage.setItem('mapSessionToken', 'authenticated_' + APP_PASSWORD_HASH.slice(0, 8));
+      AppStorage.setItem('mapSessionToken', 'authenticated_' + APP_PASSWORD_HASH.slice(0, 8));
       loginError.classList.remove('show');
       loginModal.setAttribute('aria-hidden', 'true');
       appContainer.style.display = 'flex';
@@ -151,9 +222,9 @@ function initLoginModal() {
   const clearCacheBtn = document.getElementById('clearCacheBtn');
   if (clearCacheBtn) {
     clearCacheBtn.addEventListener('click', () => {
-      logDebug('🧹 Clearing localStorage and reloading...');
-      console.log('🧹 Clearing localStorage and reloading...');
-      localStorage.clear();
+      logDebug('🧹 Clearing storage and reloading...');
+      console.log('🧹 Clearing storage and reloading...');
+      AppStorage.clear();
       sessionStorage.clear();
       // Force a hard reload
       window.location.href = window.location.href.split('#')[0];
