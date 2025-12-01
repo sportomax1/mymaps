@@ -21,6 +21,19 @@ function hashPassword(password) {
   return hash.toString();
 }
 
+// Debug logging helper
+function logDebug(message, data = null) {
+  console.log(message, data);
+  const debugOutput = document.getElementById('debugOutput');
+  if (debugOutput) {
+    const line = document.createElement('div');
+    line.style.marginBottom = '4px';
+    line.textContent = message + (data ? ' ' + JSON.stringify(data) : '');
+    debugOutput.appendChild(line);
+    debugOutput.parentElement.style.display = 'block'; // Show debug panel
+  }
+}
+
 // Simple password check (password will be in env.js or set via secret)
 // For GitHub Pages, the password will be embedded via workflow
 // For local testing, default to "PASSWORD"
@@ -29,12 +42,21 @@ const APP_PASSWORD_HASH = window.APP_PASSWORD_HASH || hashPassword('PASSWORD');
 function checkPassword(inputPassword) {
   const inputHash = hashPassword(inputPassword);
   const expectedHash = APP_PASSWORD_HASH;
+  const match = inputHash === expectedHash;
+  
   console.log('🔑 Password Check:');
   console.log('  Input: ' + inputPassword);
   console.log('  Input Hash: ' + inputHash);
   console.log('  Expected Hash: ' + expectedHash);
-  console.log('  Match: ' + (inputHash === expectedHash ? '✓ YES' : '✗ NO'));
-  return inputHash === expectedHash;
+  console.log('  Match: ' + (match ? '✓ YES' : '✗ NO'));
+  
+  logDebug('🔑 Password Check:');
+  logDebug('  Input: ' + inputPassword);
+  logDebug('  Input Hash: ' + inputHash);
+  logDebug('  Expected Hash: ' + expectedHash);
+  logDebug('  Match: ' + (match ? '✓ YES' : '✗ NO'));
+  
+  return match;
 }
 
 function initLoginModal() {
@@ -44,10 +66,32 @@ function initLoginModal() {
   const loginError = document.getElementById('loginError');
   const appContainer = document.getElementById('appContainer');
 
+  // Setup debug panel
+  const showDebugBtn = document.getElementById('showDebugBtn');
+  const debugPanel = document.getElementById('debugPanel');
+  const toggleDebugBtn = document.getElementById('toggleDebugBtn');
+  
+  if (showDebugBtn) {
+    showDebugBtn.addEventListener('click', () => {
+      debugPanel.style.display = 'block';
+      showDebugBtn.style.display = 'none';
+    });
+  }
+  if (toggleDebugBtn) {
+    toggleDebugBtn.addEventListener('click', () => {
+      debugPanel.style.display = 'none';
+      showDebugBtn.style.display = 'block';
+    });
+  }
+
+  logDebug('🚀 App Initializing...');
+  logDebug('APP_PASSWORD_HASH loaded: ' + (window.APP_PASSWORD_HASH ? '✓' : '✗'));
+  
   // Ensure APP_PASSWORD_HASH is loaded from env.js
   if (!window.APP_PASSWORD_HASH) {
+    logDebug('❌ APP_PASSWORD_HASH not loaded! env.js may not have loaded.');
     console.error('❌ APP_PASSWORD_HASH not loaded! env.js may not have loaded.');
-    loginError.textContent = '❌ Configuration error. Check console. Reload page.';
+    loginError.textContent = '❌ Configuration error. Check Debug panel.';
     loginError.classList.add('show');
     return;
   }
@@ -56,8 +100,12 @@ function initLoginModal() {
   const sessionToken = localStorage.getItem('mapSessionToken');
   const expectedToken = 'authenticated_' + APP_PASSWORD_HASH.slice(0, 8);
   
+  logDebug('Session token: ' + (sessionToken ? 'EXISTS' : 'NONE'));
+  logDebug('Expected token: ' + expectedToken.slice(0, 20) + '...');
+  
   if (sessionToken === expectedToken) {
     // Already logged in with current hash
+    logDebug('✓ Session token VALID, bypassing login');
     console.log('✓ Session token valid, bypassing login');
     loginModal.setAttribute('aria-hidden', 'true');
     appContainer.style.display = 'flex';
@@ -66,6 +114,7 @@ function initLoginModal() {
     return;
   } else if (sessionToken && sessionToken !== expectedToken) {
     // Old session token from different password/deployment - clear it
+    logDebug('⚠️ Old session token detected, clearing localStorage');
     console.log('⚠️ Old session token detected, clearing localStorage');
     localStorage.removeItem('mapSessionToken');
   }
@@ -77,6 +126,7 @@ function initLoginModal() {
 
     if (checkPassword(password)) {
       // Correct password
+      logDebug('✓ PASSWORD CORRECT - Logging in');
       isAuthenticated = true;
       localStorage.setItem('mapSessionToken', 'authenticated_' + APP_PASSWORD_HASH.slice(0, 8));
       loginError.classList.remove('show');
@@ -86,6 +136,7 @@ function initLoginModal() {
       startApp(); // Start the app after auth
     } else {
       // Wrong password
+      logDebug('✗ PASSWORD INCORRECT');
       loginError.textContent = '❌ Incorrect password. Try again.';
       loginError.classList.add('show');
       passwordInput.value = '';
@@ -100,6 +151,7 @@ function initLoginModal() {
   const clearCacheBtn = document.getElementById('clearCacheBtn');
   if (clearCacheBtn) {
     clearCacheBtn.addEventListener('click', () => {
+      logDebug('🧹 Clearing localStorage and reloading...');
       console.log('🧹 Clearing localStorage and reloading...');
       localStorage.clear();
       sessionStorage.clear();
