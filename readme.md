@@ -58,13 +58,13 @@ mymaps/
 
 ## 🌐 How to Run (IMPORTANT!)
 
-**⚠️ REQUIRED: You MUST use a local server to load .env files securely**
+**⚠️ REQUIRED: You MUST use a local server to load env.js securely**
 
-The `.env` file cannot be loaded when opening `index.html` directly in the browser due to CORS security restrictions. You need to run a simple local server:
+The `env.js` file cannot be loaded when opening `index.html` directly in the browser due to CORS security restrictions. You need to run a simple local server:
 
 **Option 1: Python (Recommended)**
 ```bash
-cd c:\Users\keega\OneDrive\Documents\mymaps
+cd /path/to/mymaps
 python -m http.server 8000
 ```
 Then open: `http://localhost:8000`
