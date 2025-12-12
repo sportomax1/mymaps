@@ -871,9 +871,22 @@ function stopPlayAnimation() {
 // ------------------------------
 function startApp() {
   // Check if environment variables are loaded
-  if (!window.GOOGLE_MAPS_API_KEY || !window.GOOGLE_SHEET_ID) {
-    console.error('Missing required environment variables');
-    document.getElementById('map').innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f8d7da; color: #721c24; border-radius: 15px;">❌ Missing API key or Sheet ID. Ensure `env.js` exists locally (for testing) or is generated at build time.</div>';
+  const apiKeyLoaded = !!window.GOOGLE_MAPS_API_KEY;
+  const sheetIdLoaded = !!window.GOOGLE_SHEET_ID;
+  
+  console.log('🚀 Starting app...');
+  console.log('   API Key loaded:', apiKeyLoaded);
+  console.log('   Sheet ID loaded:', sheetIdLoaded);
+  
+  if (!apiKeyLoaded || !sheetIdLoaded) {
+    const missing = [];
+    if (!apiKeyLoaded) missing.push('API Key');
+    if (!sheetIdLoaded) missing.push('Sheet ID');
+    
+    const errorMsg = `❌ Missing: ${missing.join(', ')}\n\n📝 Steps:\n1. Ensure env.js is loaded\n2. Check browser console for errors\n3. Verify secrets in GitHub (if deployed)`;
+    
+    console.error('❌ Missing environment variables:', missing);
+    document.getElementById('map').innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f8d7da; color: #721c24; border-radius: 15px; padding: 20px; white-space: pre-wrap; font-family: monospace; font-size: 12px; line-height: 1.5;">${errorMsg}</div>`;
     return;
   }
   
