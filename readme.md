@@ -4,7 +4,8 @@ A **powerful yet simple** interactive web map that loads pins from your Google S
 
 ## ✨ Features
 
-- **No Setup Required**: Just edit .env file and open in browser
+- **Immediate Access**: No password required - instant access to your map
+- **No Setup Required**: Just edit env.js file and open in browser
 - **Live Google Sheets**: Automatically fetches data from your sheet
 - **Advanced Date Filtering**: Filter by last week, month, year, custom dates, or date ranges
 - **Interactive Markers**: Click pins to see location names and dates
@@ -36,13 +37,13 @@ Your Google Sheet should have exactly this structure:
 4. Copy the Sheet ID from your URL: `https://docs.google.com/spreadsheets/d/SHEET_ID_HERE/edit`
 
 ### 3. Update Your Config
-Edit `config.js` with your credentials:
+Edit `env.js` with your credentials:
 ```javascript
-const GOOGLE_MAPS_API_KEY = "your_api_key_here";
-const GOOGLE_SHEET_ID = "your_sheet_id_here";
+window.GOOGLE_MAPS_API_KEY = "your_api_key_here";
+window.GOOGLE_SHEET_ID = "your_sheet_id_here";
 ```
 
-**That's it!** Just double-click `index.html` to open in your browser.
+**That's it!** Just open the page with a local server (see below).
 
 ## 📁 Project Files
 
@@ -51,7 +52,7 @@ mymaps/
 ├── index.html    # Main page - open this in browser
 ├── main.js       # Map logic
 ├── style.css     # Styling
-├── config.js     # Your API keys (edit this!)
+├── env.js        # Your API keys (edit this!)
 └── readme.md     # Instructions
 ```
 
@@ -105,9 +106,10 @@ zoom: 10, // Higher = more zoomed in
 
 ## 🔒 Security Note
 
-Since this runs entirely in the browser, your API key will be visible in the source code. For production use:
+Since this runs entirely in the browser and has no password protection, your API key and data will be visible to anyone who accesses the page. For production use:
 - Restrict your API key to your domain in Google Cloud Console
 - Consider using a backend proxy for additional security
+- If you need access control, consider adding authentication through a backend service
 
 ---
 
