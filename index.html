@@ -3,122 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Maps + Google Sheets Pin Map</title>
+  <title>Map Pins</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="appContainer" class="app-container">
-    <header>
-      <h1>📍 Map</h1>
-    </header>
-    
-    <main>
-      <div id="map"></div>
-    </main>
+  <h1>Map Pins from Google Sheets</h1>
+  <div id="map" style="height: 90vh;"></div>
 
-    <!-- Bottom control panel (iPhone-optimized) -->
-    <div class="controls-footer">
-      <!-- Period selector and navigation -->
-      <div class="period-controls">
-        <div class="period-selector">
-          <button id="periodDay" class="period-btn active" data-period="day">Day</button>
-          <button id="periodWeek" class="period-btn" data-period="week">Week</button>
-          <button id="periodMonth" class="period-btn" data-period="month">Month</button>
-          <button id="periodQuarter" class="period-btn" data-period="quarter">Quarter</button>
-          <button id="periodYear" class="period-btn" data-period="year">Year</button>
-        </div>
-        <div class="period-nav">
-          <button id="prevPeriodBtn" class="nav-btn">◀</button>
-          <span id="periodDisplay" class="period-display">Today</span>
-          <button id="nextPeriodBtn" class="nav-btn">▶</button>
-        </div>
-      </div>
-
-      <div class="controls-top-row">
-        <button id="toggleFiltersBtn" class="icon-btn">⚙️</button>
-        <input type="date" id="datePickerDaily" class="date-input-small">
-        <button id="viewDataBtn" class="icon-btn">📄</button>
-        <button id="timelineBtn" class="icon-btn">📊</button>
-      </div>
-      
-      <div class="filter-panel" id="filterPanel" style="display: none;">
-        <div class="filter-controls" id="advancedFilters">
-          <div class="filter-group">
-            <label for="filterType">Filter:</label>
-            <select id="filterType">
-              <option value="all">All</option>
-              <option value="last-week">Last Week</option>
-              <option value="last-month">Last Month</option>
-              <option value="last-year">Last Year</option>
-              <option value="custom-date">Custom</option>
-              <option value="date-range">Range</option>
-            </select>
-          </div>
-          
-          <div class="filter-group" id="customDateGroup" style="display: none;">
-            <label for="customDate">Date:</label>
-            <input type="date" id="customDate">
-          </div>
-          
-          <div class="filter-group" id="dateRangeGroup" style="display: none;">
-            <label for="startDate">From:</label>
-            <input type="date" id="startDate">
-            <label for="endDate">To:</label>
-            <input type="date" id="endDate">
-          </div>
-          
-          <div class="filter-buttons">
-            <button id="applyFilter" class="filter-btn">🔍 Apply</button>
-            <button id="clearFilter" class="filter-btn secondary">🗑️ Clear</button>
-          </div>
-        </div>
-        <div id="filterStatus" class="filter-status"></div>
-      </div>
-
-      <!-- Play mode controls -->
-      <div id="playControls" class="play-controls" style="display: none;">
-        <button id="playBtn" class="play-btn">▶️ Play</button>
-        <button id="stopPlayBtn" class="play-btn secondary">⏹️ Stop</button>
-        <label for="playSpeed" class="speed-label">Speed:</label>
-        <input type="range" id="playSpeed" min="0.5" max="3" step="0.5" value="1" class="play-speed-slider">
-        <span id="playSpeedDisplay" class="speed-display">1x</span>
-        <span id="playStatus" class="play-status"></span>
-      </div>
-      
-      <span id="dailyDateDisplay" class="daily-date-display"></span>
-    </div>
-  </div>
-
-  <!-- Load local environment variables for testing and main JavaScript -->
-  <script src="./env.js"></script>
-  <script src="main.js"></script>
-  
-  <!-- Data points modal -->
-  <div id="dataModal" class="modal" aria-hidden="true">
-    <div class="modal-content">
-      <button id="closeModal" class="modal-close">✖</button>
-      <h2>Data Points</h2>
-      <div class="modal-actions">
-        <button id="exportCsv" class="filter-btn">Export CSV</button>
-      </div>
-      <div class="table-wrap">
-        <table id="dataTable">
-          <thead>
-            <tr><th>#</th><th>Timestamp</th><th>Street</th><th>City</th><th>State</th><th>ZIP</th><th>Latitude</th><th>Longitude</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Timeline modal -->
-  <div id="timelineModal" class="modal" aria-hidden="true">
-    <div class="modal-content timeline-modal">
-      <button id="closeTimelineModal" class="modal-close">✖</button>
-      <h2>Daily Timeline - Order of Visits</h2>
-      <div id="timelineList" class="timeline-list"></div>
-    </div>
-  </div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
