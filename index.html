@@ -1,21 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Map Pins from Google Sheet</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<style>
-  body { margin: 0; font-family: Arial, sans-serif; }
-  #map { height: 100vh; width: 100%; }
-</style>
+  <meta charset="UTF-8" />
+  <title>Location Map Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-<div id="map"></div>
+  <header>
+    <h1>📍 Location Activity Map</h1>
+    <div class="controls">
+      <label>
+        Start
+        <input type="date" id="startDate" />
+      </label>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="script.js"></script>
+      <label>
+        End
+        <input type="date" id="endDate" />
+      </label>
 
+      <button id="applyBtn">Apply</button>
+    </div>
+  </header>
+
+  <div id="map"></div>
+
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
