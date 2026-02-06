@@ -10,10 +10,6 @@
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
-
-  <!-- Heatmap -->
-  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -23,25 +19,68 @@
 
     <div class="controls">
       <label>
+        Range
+        <select id="rangeSelect">
+          <option value="last24">Last 24 hours</option>
+          <option value="last7">Last 7 days</option>
+          <option value="last30">Last month</option>
+          <option value="last365">Last year</option>
+          <option value="all">All time</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+
+      <label id="startLabel">
         Start
         <input type="date" id="startDate" />
       </label>
 
-      <label>
+      <label id="endLabel">
         End
         <input type="date" id="endDate" />
       </label>
 
+      <div id="nav24" style="display:none; align-items:center; gap:6px;">
+        <button id="prevDay">◀ Prev Day</button>
+        <button id="todayBtn">Today</button>
+        <button id="nextDay">Next Day</button>
+      </div>
+
       <button id="applyBtn">Apply</button>
-      <button id="last24Btn">Last 24h</button>
+      <button id="detailsBtn">Show Details</button>
       <button id="heatBtn">Toggle Heat</button>
     </div>
   </header>
 
   <div id="map"></div>
 
+  <!-- Details Modal -->
+  <div id="detailsModal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <button id="closeModal" class="modal-close">✖</button>
+      <h3>Addresses in range</h3>
+      <div id="detailsList"></div>
+    </div>
+  </div>
+
+  <!-- Login Modal (blocks access until authenticated) -->
+  <div id="loginModal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <h3>Enter password to continue</h3>
+      <p style="color:var(--muted);">This site is protected. Enter the site password.</p>
+      <input id="sitePassword" type="password" placeholder="Password" style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #e6edf3" />
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button id="loginCancel" class="secondary">Cancel</button>
+        <button id="loginSubmit">Unlock</button>
+      </div>
+      <div id="loginError" style="color:#b91c1c;margin-top:8px;display:none"></div>
+    </div>
+  </div>
+
   <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Heatmap plugin must load after Leaflet -->
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
