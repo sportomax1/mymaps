@@ -53,6 +53,15 @@ function formatDate(d) {
   return `${year}-${month}-${day}`;
 }
 
+function parseDateInput(v) {
+  // parse YYYY-MM-DD from input[type=date] into a local Date at midnight
+  if (!v) return new Date();
+  const parts = v.split('-').map(s => Number(s));
+  if (parts.length < 3 || parts.some(isNaN)) return new Date(v);
+  const [year, month, day] = parts;
+  return new Date(year, month - 1, day);
+}
+
 function parseTimestamp(ts) {
   if (!ts) return new Date();
   // If string contains timezone indicator (Z or +hh:mm/-hh:mm) let Date handle it
@@ -252,9 +261,9 @@ function render() {
   if (heatLayer) map.removeLayer(heatLayer);
   if (pathLine) { map.removeLayer(pathLine); pathLine = null; }
   if (playPolyline) { map.removeLayer(playPolyline); playPolyline = null; }
-  const start = new Date(startInput.value);
-  const end = new Date(endInput.value);
-  end.setHours(23, 59, 59);
+  const start = parseDateInput(startInput.value);
+  const end = parseDateInput(endInput.value);
+  end.setHours(23, 59, 59, 999);
   const filtered = data.filter(d => d.date >= start && d.date <= end);
   // If in path mode, order the filtered results by timestamp for drawing and listing
   if (modeSelect && modeSelect.value === 'path') {
