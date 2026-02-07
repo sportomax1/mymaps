@@ -482,7 +482,11 @@ detailsBtn.onclick = () => {
 
     detailsList.querySelectorAll(".focusBtn").forEach(btn => {
       btn.onclick = (e) => {
-        const idx = Number(e.target.dataset.i);
+        // Use currentTarget (the button) or find closest .focusBtn from the event target
+        const btnEl = e.currentTarget || (e.target && e.target.closest && e.target.closest('.focusBtn'));
+        if (!btnEl) return;
+        const idx = Number(btnEl.dataset && btnEl.dataset.i);
+        if (Number.isNaN(idx) || !lastFiltered || !lastFiltered[idx]) return;
         const d = lastFiltered[idx];
         map.setView([d.lat, d.lng], 17);
         // find marker and open popup
