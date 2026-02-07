@@ -81,21 +81,72 @@ function setDefaultRange() {
 async function loadData() {
   const res = await fetch(CSV_URL, { cache: "no-store" });
   const text = await res.text();
+  // Robust CSV parsing to handle quoted fields with commas/newlines
+  function parseCSV(txt) {
+    const rows = [];
+    let cur = '';
+    let row = [];
+    let inQuotes = false;
+    for (let i = 0; i < txt.length; i++) {
+      const ch = txt[i];
+      const next = txt[i + 1];
+      if (ch === '"') {
+        if (inQuotes && next === '"') {
+          // escaped quote
+          cur += '"';
+          i++; // skip next
+        } else {
+          inQuotes = !inQuotes;
+        }
+        continue;
+      }
+      if (ch === ',' && !inQuotes) {
+        row.push(cur);
+        cur = '';
+        continue;
+      }
+      if ((ch === '\n' || ch === '\r') && !inQuotes) {
+        // handle CRLF by checking next char
+        if (ch === '\r' && txt[i + 1] === '\n') {
+          i++;
+        }
+        row.push(cur);
+        cur = '';
+        // ignore empty trailing row from final newline
+        // only push non-empty row (or if any field exists)
+        if (row.length === 1 && row[0] === '') {
+          row = [];
+          continue;
+        }
+        rows.push(row);
+        row = [];
+        continue;
+      }
+      cur += ch;
+    }
+    // push last field
+    if (cur !== '' || inQuotes || row.length) {
+      row.push(cur);
+      rows.push(row);
+    }
+    return rows;
+  }
 
-  const rows = text.trim().split("\n");
-  rows.shift();
+  const parsed = parseCSV(text);
+  // remove header if present
+  if (parsed.length && parsed[0] && /timestamp/i.test((parsed[0][0]||''))) parsed.shift();
 
-  data = rows.map(r => {
-    const [
-      timestamp,
-      lat,
-      lng,
-      street,
-      city,
-      state,
-      zip,
-      count
-    ] = r.split(",");
+  data = parsed.map(cols => {
+    // Normalize columns by trimming
+    const c = cols.map(x => (x || '').trim());
+    const timestamp = c[0] || '';
+    const lat = c[1] || '';
+    const lng = c[2] || '';
+    const street = c[3] || '';
+    const city = c[4] || '';
+    const state = c[5] || '';
+    const zip = c[6] || c[7] || '';
+    const count = (c[7] && !c[6]) ? c[7] : (c[8] || '');
 
     return {
       date: parseTimestamp(timestamp),
@@ -105,9 +156,9 @@ async function loadData() {
       city,
       state,
       zip,
-      count: Number(count)
+      count: Number(count) || 1
     };
-  });
+  }).filter(d => Number.isFinite(d.lat) && Number.isFinite(d.lng) && d.date instanceof Date && !isNaN(d.date));
 
   // If user has chosen 'all' we might want earliest date; keep defaults otherwise
   applyRange();
