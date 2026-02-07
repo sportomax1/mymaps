@@ -33,6 +33,14 @@
         </select>
       </label>
 
+      <label>
+        <span class="label-text">Mode</span>
+        <select id="modeSelect">
+          <option value="points">Points</option>
+          <option value="path">Path</option>
+        </select>
+      </label>
+
       <label id="startLabel">
         <span class="label-text">Start</span>
         <input type="date" id="startDate" />
@@ -100,6 +108,8 @@
 
   <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Polyline decorator for arrows along path -->
+  <script src="https://unpkg.com/leaflet-polylinedecorator@1.7.0/dist/leaflet.polylineDecorator.min.js"></script>
   <!-- Heatmap plugin must load after Leaflet -->
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
   <script src="script.js"></script>

@@ -14,11 +14,14 @@ let heatOn = false;
 let data = [];
 let lastFiltered = [];
 let daysOffset = 0; // for last24 navigation (0 = ending now)
+let pathLine = null;
+let pathDeco = null;
 
 // ---- Inputs ----
 const rangeSelect = document.getElementById("rangeSelect");
 const startInput = document.getElementById("startDate");
 const endInput = document.getElementById("endDate");
+const modeSelect = document.getElementById("modeSelect");
 const nav24 = document.getElementById("nav24");
 const prevDay = document.getElementById("prevDay");
 const nextDay = document.getElementById("nextDay");
@@ -153,15 +156,21 @@ function pinColor(count) {
 function render() {
   markers.clearLayers();
   if (heatLayer) map.removeLayer(heatLayer);
+  if (pathLine) { map.removeLayer(pathLine); pathLine = null; }
   const start = new Date(startInput.value);
   const end = new Date(endInput.value);
   end.setHours(23, 59, 59);
-
   const filtered = data.filter(d => d.date >= start && d.date <= end);
-  lastFiltered = filtered;
+  // If in path mode, order the filtered results by timestamp for drawing and listing
+  if (modeSelect && modeSelect.value === 'path') {
+    lastFiltered = filtered.slice().sort((a, b) => a.date - b.date);
+  } else {
+    lastFiltered = filtered;
+  }
   const heatPoints = [];
 
-  filtered.forEach(d => {
+  // iterate over lastFiltered so markers and popups match ordering when in path mode
+  lastFiltered.forEach(d => {
     const popup = `
       <strong>${d.street}</strong><br>
       ${d.city}, ${d.state} ${d.zip}<br>
@@ -183,6 +192,41 @@ function render() {
     heatPoints.push([d.lat, d.lng, d.count]);
   });
 
+  // If path mode is enabled, draw a polyline through points in chronological order
+  if (modeSelect && modeSelect.value === 'path' && lastFiltered.length > 1) {
+    const latlngs = lastFiltered.map(d => [d.lat, d.lng]);
+    pathLine = L.polyline(latlngs, {
+      color: '#007aff',
+      weight: 4,
+      opacity: 0.9,
+      lineJoin: 'round'
+    }).addTo(map);
+    // Add directional arrows along the line if polyline-decorator is available
+    if (window.L && window.L.polylineDecorator) {
+      pathDeco = L.polylineDecorator(pathLine, {
+        patterns: [
+          {
+            offset: '5%',
+            repeat: '12%',
+            symbol: L.Symbol.arrowHead({
+              pixelSize: 8,
+              polygon: false,
+              pathOptions: { stroke: true, color: '#007aff', weight: 2 }
+            })
+          }
+        ]
+      }).addTo(map);
+    }
+    // add small arrowheads or styling could be added later
+  }
+
+  // Ensure map fits to the drawn elements: prefer path bounds when present
+  if (pathLine) {
+    map.fitBounds(pathLine.getBounds(), { padding: [30, 30] });
+  } else if (markers.getLayers().length) {
+    map.fitBounds(markers.getBounds(), { padding: [30, 30] });
+  }
+
   if (heatOn) {
     heatLayer = L.heatLayer(heatPoints, {
       radius: 25,
@@ -199,11 +243,12 @@ function render() {
 function applyRange() {
   const now = new Date();
   if (rangeSelect.value === "last24") {
+    // Daily mode: show nav and set start and end to the same calendar date
     nav24.style.display = "flex";
-    const end = new Date(now.getTime() - daysOffset * 24 * 60 * 60 * 1000);
-    const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-    startInput.value = formatDate(start);
-    endInput.value = formatDate(end);
+    const target = new Date(now.getTime() - daysOffset * 24 * 60 * 60 * 1000);
+    // Use the calendar date of `target` for both start and end so the UI shows a single day
+    startInput.value = formatDate(target);
+    endInput.value = formatDate(target);
   } else {
     nav24.style.display = "none";
     daysOffset = 0;
