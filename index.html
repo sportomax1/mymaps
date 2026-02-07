@@ -38,6 +38,7 @@
         <select id="modeSelect">
           <option value="points">Points</option>
           <option value="path">Path</option>
+          <option value="play">Play</option>
         </select>
       </label>
 
@@ -55,6 +56,15 @@
         <button id="prevDay" class="nav-btn">◀</button>
         <button id="todayBtn" class="nav-btn primary">Today</button>
         <button id="nextDay" class="nav-btn">▶</button>
+      </div>
+
+      <div id="playControls" class="nav-controls" style="display:none; align-items:center;">
+        <button id="playToggle" class="nav-btn">Play</button>
+        <button id="stepPlay" class="nav-btn">Step</button>
+        <label style="display:flex;align-items:center;gap:8px;margin-left:8px;">
+          <span class="label-text" style="text-transform:none;">Speed</span>
+          <input id="playSpeed" type="range" min="100" max="2000" step="100" value="800" />
+        </label>
       </div>
 
       <button id="applyBtn" class="btn-primary">Apply</button>

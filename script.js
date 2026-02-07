@@ -16,6 +16,11 @@ let lastFiltered = [];
 let daysOffset = 0; // for last24 navigation (0 = ending now)
 let pathLine = null;
 let pathDeco = null;
+// Play mode state
+let playTimer = null;
+let playIndex = 0;
+let isPlaying = false;
+let playPolyline = null;
 
 // ---- Inputs ----
 const rangeSelect = document.getElementById("rangeSelect");
@@ -23,6 +28,10 @@ const startInput = document.getElementById("startDate");
 const endInput = document.getElementById("endDate");
 const modeSelect = document.getElementById("modeSelect");
 const nav24 = document.getElementById("nav24");
+const playControls = document.getElementById('playControls');
+const playToggle = document.getElementById('playToggle');
+const stepPlayBtn = document.getElementById('stepPlay');
+const playSpeed = document.getElementById('playSpeed');
 const prevDay = document.getElementById("prevDay");
 const nextDay = document.getElementById("nextDay");
 const todayBtn = document.getElementById("todayBtn");
@@ -42,6 +51,24 @@ function formatDate(d) {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function parseTimestamp(ts) {
+  if (!ts) return new Date();
+  // If string contains timezone indicator (Z or +hh:mm/-hh:mm) let Date handle it
+  if (/[zZ]|[+-]\d{2}:?\d{2}/.test(ts)) return new Date(ts);
+
+  // Normalize common separators and extract numbers: YYYY MM DD hh mm ss
+  const cleaned = ts.replace('T', ' ').replace(/-/g, ' ').replace(/:/g, ' ');
+  const parts = cleaned.split(/\s+/).map(p => Number(p)).filter(n => !isNaN(n));
+  const year = parts[0] || 1970;
+  const month = (parts[1] || 1) - 1;
+  const day = parts[2] || 1;
+  const hour = parts[3] || 0;
+  const minute = parts[4] || 0;
+  const second = parts[5] || 0;
+  // Construct date in local timezone to preserve calendar day as intended
+  return new Date(year, month, day, hour, minute, second);
 }
 
 // Default = last 7 days
@@ -71,7 +98,7 @@ async function loadData() {
     ] = r.split(",");
 
     return {
-      date: new Date(timestamp),
+      date: parseTimestamp(timestamp),
       lat: Number(lat),
       lng: Number(lng),
       street,
@@ -157,6 +184,7 @@ function render() {
   markers.clearLayers();
   if (heatLayer) map.removeLayer(heatLayer);
   if (pathLine) { map.removeLayer(pathLine); pathLine = null; }
+  if (playPolyline) { map.removeLayer(playPolyline); playPolyline = null; }
   const start = new Date(startInput.value);
   const end = new Date(endInput.value);
   end.setHours(23, 59, 59);
@@ -164,10 +192,62 @@ function render() {
   // If in path mode, order the filtered results by timestamp for drawing and listing
   if (modeSelect && modeSelect.value === 'path') {
     lastFiltered = filtered.slice().sort((a, b) => a.date - b.date);
+  } else if (modeSelect && modeSelect.value === 'play') {
+    lastFiltered = filtered.slice().sort((a, b) => a.date - b.date);
   } else {
     lastFiltered = filtered;
   }
   const heatPoints = [];
+
+  // Play mode renders incrementally; draw only up to playIndex
+  if (modeSelect && modeSelect.value === 'play') {
+    // ensure playIndex is within bounds
+    if (!playIndex || playIndex < 0) playIndex = 0;
+    if (playIndex > lastFiltered.length) playIndex = lastFiltered.length;
+    const shown = lastFiltered.slice(0, playIndex);
+
+    shown.forEach(d => {
+      const popup = `
+      <strong>${d.street}</strong><br>
+      ${d.city}, ${d.state} ${d.zip}<br>
+      Count: ${d.count}<br>
+      ${d.date.toLocaleString()}
+    `;
+
+      L.circleMarker([d.lat, d.lng], {
+        radius: 8,
+        color: pinColor(d.count),
+        fillOpacity: 0.8
+      })
+        .bindPopup(popup)
+        .addTo(markers);
+
+      d._popup = popup;
+      heatPoints.push([d.lat, d.lng, d.count]);
+    });
+
+    if (shown.length > 1) {
+      const latlngs = shown.map(d => [d.lat, d.lng]);
+      playPolyline = L.polyline(latlngs, {
+        color: '#007aff',
+        weight: 4,
+        opacity: 0.9,
+        lineJoin: 'round'
+      }).addTo(map);
+    }
+
+    if (playPolyline) map.fitBounds(playPolyline.getBounds(), { padding: [30, 30] });
+    else if (markers.getLayers().length) map.fitBounds(markers.getBounds(), { padding: [30, 30] });
+
+    if (heatOn) {
+      heatLayer = L.heatLayer(heatPoints, {
+        radius: 25,
+        blur: 18
+      }).addTo(map);
+    }
+
+    return;
+  }
 
   // iterate over lastFiltered so markers and popups match ordering when in path mode
   lastFiltered.forEach(d => {
@@ -280,12 +360,18 @@ function applyRange() {
 document.getElementById("applyBtn").onclick = () => {
   // if custom selected, don't overwrite inputs
   if (rangeSelect.value !== "custom") applyRange();
+  // stop any running play session when applying new range
+  stopPlay();
+  playIndex = 0;
   render();
 };
 
 rangeSelect.onchange = () => {
   daysOffset = 0;
   applyRange();
+  // reset play state when range changes
+  stopPlay();
+  playIndex = 0;
   render();
 };
 
@@ -298,13 +384,82 @@ prevDay.onclick = () => {
 nextDay.onclick = () => {
   if (daysOffset > 0) daysOffset -= 1;
   applyRange();
+  stopPlay();
+  playIndex = 0;
   render();
 };
 
 todayBtn.onclick = () => {
   daysOffset = 0;
   applyRange();
+  stopPlay();
+  playIndex = 0;
   render();
+};
+
+// Mode change: toggle play controls visibility
+modeSelect.onchange = () => {
+  if (modeSelect.value === 'play') {
+    playControls.style.display = 'flex';
+    nav24.style.display = 'none';
+    // reset play state ready for new playback
+    stopPlay();
+    playIndex = 0;
+  } else {
+    playControls.style.display = 'none';
+  }
+};
+
+function stopPlay() {
+  if (playTimer) {
+    clearInterval(playTimer);
+    playTimer = null;
+  }
+  isPlaying = false;
+  if (playToggle) playToggle.textContent = 'Play';
+}
+
+function startPlay() {
+  if (!lastFiltered || !lastFiltered.length) return;
+  isPlaying = true;
+  if (playToggle) playToggle.textContent = 'Pause';
+  // ensure playIndex starts at 0 to show progression
+  if (!playIndex) playIndex = 0;
+  const interval = Number(playSpeed.value) || 800;
+  // step immediately to show first point then continue
+  stepPlay();
+  playTimer = setInterval(() => {
+    stepPlay();
+  }, interval);
+}
+
+function stepPlay() {
+  if (!lastFiltered) return;
+  if (playIndex >= lastFiltered.length) {
+    stopPlay();
+    return;
+  }
+  playIndex += 1;
+  render();
+}
+
+playToggle.onclick = () => {
+  if (isPlaying) stopPlay();
+  else startPlay();
+};
+
+stepPlayBtn.onclick = () => {
+  // single step forward
+  stopPlay();
+  stepPlay();
+};
+
+// update interval when speed changes while playing
+playSpeed.oninput = () => {
+  if (isPlaying) {
+    stopPlay();
+    startPlay();
+  }
 };
 
 detailsBtn.onclick = () => {
