@@ -59,6 +59,19 @@ function parseTimestamp(ts) {
   if (/[zZ]|[+-]\d{2}:?\d{2}/.test(ts)) return new Date(ts);
 
   // Normalize common separators and extract numbers: YYYY MM DD hh mm ss
+  // Handle common US style with slashes: M/D/YYYY HH:MM:SS
+  if (/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(ts)) {
+    // split date and time
+    const [datePart, timePart] = ts.split(' ');
+    const [m, d, y] = datePart.split('/').map(s => Number(s));
+    const t = (timePart || '').split(':').map(s => Number(s));
+    const hour = t[0] || 0;
+    const minute = t[1] || 0;
+    const second = t[2] || 0;
+    return new Date(y, (m || 1) - 1, d || 1, hour, minute, second);
+  }
+
+  // Normalize common separators and extract numbers: YYYY MM DD hh mm ss
   const cleaned = ts.replace('T', ' ').replace(/-/g, ' ').replace(/:/g, ' ');
   const parts = cleaned.split(/\s+/).map(p => Number(p)).filter(n => !isNaN(n));
   const year = parts[0] || 1970;
@@ -142,11 +155,14 @@ async function loadData() {
     const timestamp = c[0] || '';
     const lat = c[1] || '';
     const lng = c[2] || '';
-    const street = c[3] || '';
-    const city = c[4] || '';
-    const state = c[5] || '';
-    const zip = c[6] || c[7] || '';
-    const count = (c[7] && !c[6]) ? c[7] : (c[8] || '');
+    // The CSV may include commas inside the street field; assume final columns are city,state,zip,count
+    const tail = c.slice(-4);
+    const count = tail[3] || '';
+    const zip = tail[2] || '';
+    const state = tail[1] || '';
+    const city = tail[0] || '';
+    const streetParts = c.slice(3, c.length - 4);
+    const street = streetParts.join(', ').trim();
 
     return {
       date: parseTimestamp(timestamp),
