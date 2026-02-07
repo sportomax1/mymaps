@@ -15,11 +15,14 @@
 <body>
 
   <header>
-    <h1>📍 Activity Map</h1>
+    <div class="header-title">
+      <div class="app-icon">📍</div>
+      <h1>Activity Map</h1>
+    </div>
 
     <div class="controls">
       <label>
-        Range
+        <span class="label-text">Range</span>
         <select id="rangeSelect">
           <option value="last24">Last 24 hours</option>
           <option value="last7">Last 7 days</option>
@@ -31,24 +34,24 @@
       </label>
 
       <label id="startLabel">
-        Start
+        <span class="label-text">Start</span>
         <input type="date" id="startDate" />
       </label>
 
       <label id="endLabel">
-        End
+        <span class="label-text">End</span>
         <input type="date" id="endDate" />
       </label>
 
-      <div id="nav24" style="display:none; align-items:center; gap:6px;">
-        <button id="prevDay">◀ Prev Day</button>
-        <button id="todayBtn">Today</button>
-        <button id="nextDay">Next Day</button>
+      <div id="nav24" class="nav-controls" style="display:none;">
+        <button id="prevDay" class="nav-btn">◀</button>
+        <button id="todayBtn" class="nav-btn primary">Today</button>
+        <button id="nextDay" class="nav-btn">▶</button>
       </div>
 
-      <button id="applyBtn">Apply</button>
-      <button id="detailsBtn">Show Details</button>
-      <button id="heatBtn">Toggle Heat</button>
+      <button id="applyBtn" class="btn-primary">Apply</button>
+      <button id="detailsBtn" class="btn-secondary">📊 Details</button>
+      <button id="heatBtn" class="btn-secondary">🔥 Heat</button>
     </div>
   </header>
 
@@ -56,24 +59,42 @@
 
   <!-- Details Modal -->
   <div id="detailsModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop"></div>
     <div class="modal-content">
-      <button id="closeModal" class="modal-close">✖</button>
-      <h3>Addresses in range</h3>
-      <div id="detailsList"></div>
+      <div class="modal-header">
+        <h3>📋 Addresses in Range</h3>
+        <button id="closeModal" class="modal-close" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="detailsList"></div>
+      </div>
     </div>
   </div>
 
   <!-- Login Modal (blocks access until authenticated) -->
-  <div id="loginModal" class="modal" aria-hidden="true">
-    <div class="modal-content">
-      <h3>Enter password to continue</h3>
-      <p style="color:var(--muted);">This site is protected. Enter the site password.</p>
-      <input id="sitePassword" type="password" placeholder="Password" style="width:100%;padding:10px;margin-top:10px;border-radius:8px;border:1px solid #e6edf3" />
-      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
-        <button id="loginCancel" class="secondary">Cancel</button>
-        <button id="loginSubmit">Unlock</button>
+  <div id="loginModal" class="modal login-modal" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content login-card">
+      <div class="login-icon">🔐</div>
+      <h3>Welcome Back</h3>
+      <p class="login-subtitle">This site is protected. Please enter your password to continue.</p>
+      
+      <div class="input-group">
+        <div class="input-icon">🔑</div>
+        <input id="sitePassword" type="password" placeholder="Enter password" autocomplete="current-password" />
       </div>
-      <div id="loginError" style="color:#b91c1c;margin-top:8px;display:none"></div>
+      
+      <div id="loginError" class="error-message"></div>
+      
+      <div class="button-group">
+        <button id="loginSubmit" class="btn-primary btn-large">Unlock</button>
+        <button id="loginCancel" class="btn-tertiary">Cancel</button>
+      </div>
     </div>
   </div>
 

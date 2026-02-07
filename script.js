@@ -34,7 +34,11 @@ const loginCancel = document.getElementById("loginCancel");
 const loginError = document.getElementById("loginError");
 
 function formatDate(d) {
-  return d.toISOString().split("T")[0];
+  // Use local timezone instead of UTC to avoid date shifting
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // Default = last 7 days
@@ -262,15 +266,16 @@ detailsBtn.onclick = () => {
   // populate modal with lastFiltered
   detailsList.innerHTML = "";
   if (!lastFiltered || !lastFiltered.length) {
-    detailsList.innerHTML = "<div>No addresses in range.</div>";
+    detailsList.innerHTML = "<div style='text-align:center;color:var(--text-secondary);padding:20px 0'>No addresses in range.</div>";
   } else {
     lastFiltered.forEach((d, i) => {
       const el = document.createElement("div");
       el.className = "detail-item";
       el.innerHTML = `
         <strong>${d.street}</strong><br>
-        ${d.city}, ${d.state} ${d.zip} — Count: ${d.count}<br>
-        <button data-i="${i}" class="focusBtn">Show on map</button>
+        <span style="color:var(--text-secondary)">${d.city}, ${d.state} ${d.zip}</span><br>
+        <span style="font-size:14px;color:var(--text-secondary)">Count: <strong style="color:var(--primary)">${d.count}</strong></span><br>
+        <button data-i="${i}" class="focusBtn">📍 Show on Map</button>
       `;
       detailsList.appendChild(el);
     });
@@ -291,15 +296,32 @@ detailsBtn.onclick = () => {
       };
     });
   }
-  detailsModal.style.display = "block";
+  detailsModal.style.display = "flex";
 };
 
 closeModal.onclick = () => {
   detailsModal.style.display = "none";
 };
 
+// Close modals when clicking backdrop
+detailsModal.onclick = (e) => {
+  if (e.target === detailsModal || e.target.classList.contains('modal-backdrop')) {
+    detailsModal.style.display = 'none';
+  }
+};
+
+loginModal.onclick = (e) => {
+  if (e.target === loginModal || e.target.classList.contains('modal-backdrop')) {
+    // Don't allow closing login modal by clicking outside for security
+    // loginModal.style.display = 'none';
+  }
+};
+
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') detailsModal.style.display = 'none';
+  if (e.key === 'Escape') {
+    detailsModal.style.display = 'none';
+    // Don't allow ESC to close login modal for security
+  }
 });
 
 document.getElementById("heatBtn").onclick = () => {
